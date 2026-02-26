@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>QR코드 만들기</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <style>
+        :root { --primary: #3182F6; --glass: rgba(255, 255, 255, 0.25); }
+        body {
+            margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center;
+            background: linear-gradient(135deg, #aed6f1, #d7bde2, #ffadbb);
+            font-family: 'Pretendard', sans-serif;
+        }
+        .glass-card {
+            width: 480px; padding: 40px; border-radius: 30px;
+            background: var(--glass); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; font-size: 13px; margin-bottom: 8px; color: #444; font-weight: 600; }
+        input[type="text"] {
+            width: 100%; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.8); box-sizing: border-box; outline: none;
+        }
+        .flex-row { display: flex; gap: 10px; margin-bottom: 20px; }
+        select, input[type="color"] {
+            padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.5); background: #fff; cursor: pointer;
+        }
+        button {
+            width: 100%; padding: 16px; border: none; border-radius: 14px; background: var(--primary);
+            color: white; font-weight: 700; font-size: 16px; cursor: pointer; transition: 0.3s;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(49, 130, 246, 0.3); }
+        #preview-box {
+            margin-top: 25px; background: #fff; border-radius: 20px; padding: 25px;
+            display: flex; justify-content: center; align-items: center; min-height: 320px;
+        }
+        canvas { max-width: 100%; height: auto; }
+        .action-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-sub { background: rgba(0,0,0,0.08); color: #333; padding: 12px; font-size: 14px; flex: 1; }
+    </style>
+</head>
+<body>
+
+<div class="glass-card">
+    <h2 style="margin-top:0; color:#1d1d1f;">QR 코드 제작</h2>
+    
+    <div class="input-group">
+        <label>연결할 URL</label>
+        <input type="text" id="urlInput" placeholder="https://www.google.com" value="https://www.google.com">
+    </div>
+
+    <div class="flex-row">
+        <div style="flex:1; text-align:left;">
+            <label>모양</label>
+            <select id="shapeSelect" style="width:100%">
+                <option value="square">기본</option>
+                <option value="heart" selected>하트</option>
+            </select>
+        </div>
+        <div style="text-align:left;">
+            <label>QR 색상</label>
+            <input type="color" id="fgColor" value="#000000">
+        </div>
+        <div style="text-align:left;">
+            <label>배경 색상</label>
+            <input type="color" id="bgColor" value="#ffffff">
+        </div>
+    </div>
+
+    <button onclick="generateQR()">QR 코드 생성</button>
+    
+    <div id="preview-box">
+        <canvas id="qrCanvas"></canvas>
+    </div>
+
+    <div class="action-btns">
+        <button class="btn-sub" onclick="copyClipboard()">클립보드 복사</button>
+        <button class="btn-sub" onclick="savePNG()">PNG 저장</button>
+    </div>
+</div>
+
+<script>
+    function generateQR() {
+        const url = document.getElementById('urlInput').value;
+        const shape = document.getElementById('shapeSelect').value;
+        const fgColor = document.getElementById('fgColor').value;
+        const bgColor = document.getElementById('bgColor').value;
+        const canvas = document.getElementById('qrCanvas');
+        const ctx = canvas.getContext('2d');
+
+        if (!url) return alert("URL을 입력하세요.");
+
+        const qr = qrcode(0, 'H');
+        qr.addData(url);
+        qr.make();
+
+        const count = qr.getModuleCount();
+        const cellSize = 12; 
+        const qrSize = count * cellSize;
+
+        // 2. QR 밀도 기반 확률 계산 (QR 버전이 높을수록 더 빽빽하게)
+        // count는 QR 코드의 한 변의 셀 개수 (예: 버전 1은 21, 버전 10은 57)
+        // 기본 확률 0.5에서 count에 비례하여 최대 0.7까지 증가
+        const densityProbability = 0.5 + (count / 100) * 0.3;
+
+        if (shape === "square") {
+            canvas.width = qrSize + 60;
+            canvas.height = qrSize + 60;
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.translate(30, 30);
+            drawMatrix(qr, ctx, count, cellSize, fgColor);
+        } else {
+            const canvasSize = qrSize * 1.8;
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+            
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.translate(canvas.width / 2, canvas.height / 2 + qrSize / 5);
+            ctx.rotate(45 * Math.PI / 180);
+
+            ctx.translate(-qrSize / 2, -qrSize / 2);
+            drawMatrix(qr, ctx, count, cellSize, fgColor);
+
+            // 3. 동적 밀도 확률 전달
+            drawLobe(ctx, qrSize / 2, 0, qrSize / 2, fgColor, cellSize, "top", densityProbability);
+            drawLobe(ctx, 0, qrSize / 2, qrSize / 2, fgColor, cellSize, "left", densityProbability);
+        }
+    }
+
+    function drawMatrix(qr, ctx, count, cellSize, color) {
+        ctx.fillStyle = color;
+        for (let r = 0; r < count; r++) {
+            for (let c = 0; c < count; c++) {
+                if (qr.isDark(r, c)) {
+                    ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+    }
+
+    function drawLobe(ctx, cx, cy, radius, color, cellSize, side, probability) {
+        ctx.fillStyle = color;
+        for (let x = -radius; x <= radius; x += cellSize) {
+            for (let y = -radius; y <= radius; y += cellSize) {
+                if (Math.sqrt(x * x + y * y) <= radius) {
+                    const isInsideLobe = (side === "top" && y <= 0) || (side === "left" && x <= 0);
+                    // 4. QR 밀도에 맞춰 계산된 확률 적용
+                    if (isInsideLobe && Math.random() < probability) {
+                        ctx.fillRect(cx + x, cy + y, cellSize, cellSize);
+                    }
+                }
+            }
+        }
+    }
+
+    async function copyClipboard() {
+        const canvas = document.getElementById('qrCanvas');
+        canvas.toBlob(blob => {
+            const item = new ClipboardItem({ "image/png": blob });
+            navigator.clipboard.write([item]).then(() => alert("클립보드에 복사되었습니다!"));
+        });
+    }
+
+    function savePNG() {
+        const canvas = document.getElementById('qrCanvas');
+        const link = document.createElement('a');
+        link.download = 'heart_qr.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    }
+
+    window.onload = generateQR;
+</script>
+
+</body>
+</html>
