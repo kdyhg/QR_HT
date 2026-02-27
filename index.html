@@ -3,254 +3,304 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>1학년 2반 자리배치표 (해강고 김동연T)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <title>동티의 하트 QR코드 메이커</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
     <style>
-        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        body { font-family: 'Pretendard', sans-serif; background-color: #f8f9fa; }
-        .classroom-container { max-width: 1200px; margin: 0 auto; }
+        :root { 
+            --primary: #3182F6; 
+            --glass: rgba(255, 255, 255, 0.25); 
+            --text-main: #1d1d1f;
+            --text-sub: #444;
+        }
         
-        .btn-purple { background-color: #5851db; color: white; }
-        .btn-green { background-color: #009664; color: white; }
-        .btn-white { background-color: white; border: 1px solid #e2e8f0; color: #4a5568; }
-        .side-bar { background-color: #1e5f85; color: white; border-radius: 4px; width: 60px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .vertical-text { writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 0.5em; font-weight: 900; font-size: 1.5rem; }
+        body {
+            margin: 0; 
+            min-height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            background: linear-gradient(135deg, #aed6f1, #d7bde2, #ffadbb);
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            padding: 20px;
+            box-sizing: border-box;
+        }
 
-        /* 책상 스타일 및 번호 디자인 수정 */
-        .desk {
-            width: 75px; height: 60px; border: 1.5px solid #333;
-            background-color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
-            margin: 2px; transition: all 0.2s;
-        }
-        .desk.seat-fixed { background-color: #fef08a; border-color: #ca8a04; }
-        .desk.selected { background-color: #bfdbfe; border-color: #2563eb; }
-        
-        /* 회색 굵은 폰트 중앙 배치 */
-        .desk-number { 
-            font-size: 1.8rem; 
-            font-weight: 900; 
-            color: #d1d5db; /* Gray-300 */
-            position: absolute; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%); 
-            z-index: 0;
-            user-select: none;
-        }
-        .student-name { 
-            font-size: 1rem; 
-            font-weight: 800; 
-            color: #111; 
-            z-index: 10; 
+        .glass-card {
+            width: 100%;
+            max-width: 480px; 
+            padding: 40px; 
+            border-radius: 30px;
+            background: var(--glass); 
+            backdrop-filter: blur(25px); 
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4); 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            text-align: center;
             position: relative;
-            pointer-events: none; 
         }
 
-        /* 시점 대칭 CSS 로직 유지 */
-        .teacher-view #layout-main { flex-direction: row; } 
-        .teacher-view #desk-area-wrapper { flex-direction: column; } 
-        .teacher-view #desk-grid-container { flex-direction: column-reverse; } 
-        .teacher-view .seat-row { flex-direction: row-reverse; } 
-        .teacher-view .desk-cluster { flex-direction: row-reverse; } 
+        h2 { margin-top: 0; color: var(--text-main); font-weight: 800; margin-bottom: 25px; }
 
-        .student-view #layout-main { flex-direction: row-reverse; } 
-        .student-view #desk-area-wrapper { flex-direction: column-reverse; } 
-        .student-view #desk-grid-container { flex-direction: column; } 
-        .student-view .seat-row { flex-direction: row; } 
-        .student-view .desk-cluster { flex-direction: row; }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; font-size: 13px; margin-bottom: 8px; color: var(--text-sub); font-weight: 600; }
+        
+        input[type="text"] {
+            width: 100%; 
+            padding: 14px; 
+            border-radius: 12px; 
+            border: 1px solid rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.8); 
+            box-sizing: border-box; 
+            outline: none;
+            transition: border 0.2s;
+        }
+        input[type="text"]:focus { border-color: var(--primary); }
 
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
-        .modal.active { display: flex; }
+        .flex-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        
+        select, input[type="color"] {
+            padding: 10px; 
+            border-radius: 10px; 
+            border: 1px solid rgba(255,255,255,0.5); 
+            background: #fff; 
+            cursor: pointer;
+            height: 42px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%; 
+            padding: 16px; 
+            border: none; 
+            border-radius: 14px; 
+            background: var(--primary);
+            color: white; 
+            font-weight: 700; 
+            font-size: 16px; 
+            cursor: pointer; 
+            transition: 0.3s;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(49, 130, 246, 0.3); }
+        button:active { transform: translateY(0); }
+
+        #preview-box {
+            margin-top: 25px; 
+            background: #fff; 
+            border-radius: 20px; 
+            padding: 25px;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 320px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+        }
+        canvas { max-width: 100%; height: auto; border-radius: 10px; }
+
+        .action-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-sub { background: rgba(0,0,0,0.08); color: #333; padding: 12px; font-size: 14px; flex: 1; border-radius: 12px; }
+        .btn-sub:hover { background: rgba(0,0,0,0.15); }
+
+        /* 제작자 표기 스타일 */
+        .footer-credit {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            color: #555;
+        }
+        .footer-credit strong { color: #222; }
+        .footer-credit a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+        .footer-credit a:hover { opacity: 0.7; text-decoration: underline; }
+
+        /* 메시지 알림 박스 */
+        #status-msg {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: none;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; bottom: 20px; } to { opacity: 1; bottom: 30px; } }
     </style>
 </head>
-<body class="p-4 md:p-8 teacher-view">
+<body>
 
-    <div class="classroom-container">
-        <header class="text-center mb-6">
-            <h1 class="text-4xl font-black text-[#1e293b] mb-2">1학년 2반 자리배치표</h1>
-            <p class="text-gray-500 font-medium" id="view-label">현재: 교사 시점 (운동장: 우측 / 교탁: 아래)</p>
-        </header>
+<div class="glass-card">
+    <h2>QR 코드 제작</h2>
+    
+    <div class="input-group">
+        <label>연결할 URL</label>
+        <input type="text" id="urlInput" placeholder="https://www.google.com" value="https://www.google.com">
+    </div>
 
-        <div class="bg-white p-6 rounded-2xl shadow-md mb-10 border border-gray-100">
-            <div class="flex flex-wrap gap-4 justify-between items-center mb-6 border-b border-gray-50 pb-6">
-                <div class="flex gap-2">
-                    <button onclick="openBulkInputModal()" class="btn-purple px-5 py-2.5 rounded-lg font-bold shadow-sm">📋 명단 일괄 입력</button>
-                    <button id="swapModeBtn" onclick="toggleSwapMode()" class="btn-white px-5 py-2.5 rounded-lg font-bold shadow-sm">
-                        🔄 자리 바꾸기: <span id="swapStatus" class="text-red-500">OFF</span>
-                    </button>
-                    <button onclick="toggleViewMode()" class="btn-green px-5 py-2.5 rounded-lg font-bold shadow-sm flex items-center gap-2">
-                        👀 <span id="viewBtnText">학생 시점으로 보기</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 pt-2">
-                <div>
-                    <label class="text-xs font-black text-gray-400 uppercase">전체 인원</label>
-                    <input type="number" id="inputTotal" value="21" oninput="updateLayout()" class="w-full border-b-2 border-gray-200 p-1 font-bold outline-none focus:border-indigo-500">
-                </div>
-                <div>
-                    <label class="text-xs font-black text-gray-400 uppercase">분단 개수</label>
-                    <input type="number" id="inputCols" value="3" oninput="updateLayout()" class="w-full border-b-2 border-gray-200 p-1 font-bold outline-none focus:border-indigo-500">
-                </div>
-            </div>
+    <div class="flex-row">
+        <div style="flex:1; min-width: 120px; text-align:left;">
+            <label>모양</label>
+            <select id="shapeSelect" style="width:100%">
+                <option value="square">기본 사각형</option>
+                <option value="heart" selected>러블리 하트</option>
+            </select>
         </div>
-
-        <div id="layout-main" class="flex justify-between items-stretch min-h-[600px] gap-4 px-4 transition-all duration-500">
-            <div id="sidebar-left" class="side-bar"><span class="vertical-text">복 도</span></div>
-            <div id="desk-area-wrapper" class="flex-1 flex flex-col items-center">
-                <div id="desk-grid-container" class="flex flex-col gap-6 w-full items-center mt-4 flex-1"></div>
-                <div id="kyotak" class="mt-8 mb-8">
-                    <div class="bg-[#fbc4ab] text-[#9c4d28] px-14 py-4 rounded-md text-2xl font-black shadow-md border-b-4 border-[#e5a88a]">교 탁</div>
-                </div>
-            </div>
-            <div id="sidebar-right" class="side-bar"><span class="vertical-text">운 동 장</span></div>
+        <div style="text-align:left;">
+            <label>QR 색상</label>
+            <input type="color" id="fgColor" value="#000000">
+        </div>
+        <div style="text-align:left;">
+            <label>배경 색상</label>
+            <input type="color" id="bgColor" value="#ffffff">
         </div>
     </div>
 
-    <div id="bulkInputModal" class="modal">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md mx-4">
-            <h3 class="text-xl font-bold mb-4 font-black">학생 명단 일괄 입력</h3>
-            <textarea id="bulkNames" rows="10" class="w-full border p-4 rounded-xl mb-4 text-sm outline-none focus:border-indigo-500" placeholder="이름을 입력하세요."></textarea>
-            <div class="flex justify-end gap-2">
-                <button onclick="closeModal('bulkInputModal')" class="px-4 py-2 text-gray-400 font-bold">취소</button>
-                <button onclick="applyBulkAssignment()" class="px-6 py-2 btn-purple rounded-lg font-bold">배치 적용</button>
-            </div>
-        </div>
+    <button onclick="generateQR()">QR 코드 생성</button>
+    
+    <div id="preview-box">
+        <canvas id="qrCanvas"></canvas>
     </div>
 
-    <script>
-        let seatsData = {}; 
-        let isStudentView = false;
-        let swapMode = false;
-        let selectedSeatForSwap = null;
+    <div class="action-btns">
+        <button class="btn-sub" onclick="copyClipboard()">클립보드 복사</button>
+        <button class="btn-sub" onclick="savePNG()">PNG 저장</button>
+    </div>
 
-        function updateLayout() {
-            const total = parseInt(document.getElementById('inputTotal').value) || 0;
-            const cols = parseInt(document.getElementById('inputCols').value) || 1;
-            const container = document.getElementById('desk-grid-container');
-            container.innerHTML = '';
-            
-            const pairFactor = 2;
-            const rowCount = Math.ceil(total / (cols * pairFactor));
-            
-            let currentID = 1;
-            let idMap = Array.from({ length: rowCount }, () => Array.from({ length: cols }, () => [null, null]));
+    <!-- 제작자 표기 영역 -->
+    <div class="footer-credit">
+        제작: <strong>동티</strong> | 
+        <a href="https://blog.naver.com/math_dt" target="_blank" rel="noopener">블로그 방문하기</a>
+    </div>
+</div>
 
-            for (let r = 0; r < rowCount; r++) {
-                for (let c = 0; c < cols; c++) {
-                    for (let p = 0; p < pairFactor; p++) {
-                        if (currentID <= total) idMap[r][c][p] = currentID++;
+<div id="status-msg"></div>
+
+<script>
+    function showMessage(text) {
+        const msgBox = document.getElementById('status-msg');
+        msgBox.innerText = text;
+        msgBox.style.display = 'block';
+        setTimeout(() => {
+            msgBox.style.display = 'none';
+        }, 2000);
+    }
+
+    function generateQR() {
+        const url = document.getElementById('urlInput').value;
+        const shape = document.getElementById('shapeSelect').value;
+        const fgColor = document.getElementById('fgColor').value;
+        const bgColor = document.getElementById('bgColor').value;
+        const canvas = document.getElementById('qrCanvas');
+        const ctx = canvas.getContext('2d');
+
+        if (!url) {
+            showMessage("URL을 입력해주세요.");
+            return;
+        }
+
+        const qr = qrcode(0, 'H');
+        qr.addData(url);
+        qr.make();
+
+        const count = qr.getModuleCount();
+        const cellSize = 12; 
+        const qrSize = count * cellSize;
+
+        // QR 밀도 기반 확률 계산
+        const densityProbability = 0.5 + (count / 100) * 0.3;
+
+        if (shape === "square") {
+            canvas.width = qrSize + 60;
+            canvas.height = qrSize + 60;
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.setTransform(1, 0, 0, 1, 30, 30);
+            drawMatrix(qr, ctx, count, cellSize, fgColor);
+        } else {
+            const canvasSize = qrSize * 1.8;
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+            
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 하트 중심 이동 및 회전
+            ctx.setTransform(1, 0, 0, 1, canvas.width / 2, canvas.height / 2 + qrSize / 5);
+            ctx.rotate(45 * Math.PI / 180);
+
+            ctx.translate(-qrSize / 2, -qrSize / 2);
+            drawMatrix(qr, ctx, count, cellSize, fgColor);
+
+            drawLobe(ctx, qrSize / 2, 0, qrSize / 2, fgColor, cellSize, "top", densityProbability);
+            drawLobe(ctx, 0, qrSize / 2, qrSize / 2, fgColor, cellSize, "left", densityProbability);
+        }
+        
+        // Reset transform
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+
+    function drawMatrix(qr, ctx, count, cellSize, color) {
+        ctx.fillStyle = color;
+        for (let r = 0; r < count; r++) {
+            for (let c = 0; c < count; c++) {
+                if (qr.isDark(r, c)) {
+                    ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+    }
+
+    function drawLobe(ctx, cx, cy, radius, color, cellSize, side, probability) {
+        ctx.fillStyle = color;
+        for (let x = -radius; x <= radius; x += cellSize) {
+            for (let y = -radius; y <= radius; y += cellSize) {
+                if (Math.sqrt(x * x + y * y) <= radius) {
+                    const isInsideLobe = (side === "top" && y <= 0) || (side === "left" && x <= 0);
+                    if (isInsideLobe && Math.random() < probability) {
+                        ctx.fillRect(cx + x, cy + y, cellSize, cellSize);
                     }
                 }
             }
-
-            for (let r = 0; r < rowCount; r++) {
-                const rowDiv = document.createElement('div');
-                rowDiv.className = "seat-row flex justify-center gap-10 w-full";
-                for (let c = 0; c < cols; c++) {
-                    const cluster = document.createElement('div');
-                    cluster.className = "desk-cluster flex";
-                    cluster.style.minWidth = "160px";
-                    for (let p = 0; p < pairFactor; p++) {
-                        const seatID = idMap[r][c][p];
-                        if (seatID) cluster.appendChild(createDesk(seatID));
-                        else {
-                            const spacer = document.createElement('div');
-                            spacer.style.width = "75px";
-                            cluster.appendChild(spacer);
-                        }
-                    }
-                    rowDiv.appendChild(cluster);
-                    new Sortable(cluster, { group: 'shared', animation: 150 });
-                }
-                container.appendChild(rowDiv);
-            }
-            renderData();
         }
+    }
 
-        function createDesk(id) {
-            if (!seatsData[id]) seatsData[id] = { name: "", fixed: false };
-            const div = document.createElement('div');
-            div.id = `seat-${id}`;
-            div.className = "desk shadow-sm";
-            div.onclick = (e) => handleSeatClick(e, id);
-            div.innerHTML = `<span class="desk-number"></span><span class="student-name"></span>`;
-            return div;
-        }
-
-        function renderData() {
-            let displayCounter = 1;
-            const sortedIds = Object.keys(seatsData).map(Number).sort((a, b) => a - b);
-            sortedIds.forEach(id => {
-                const el = document.getElementById(`seat-${id}`);
-                if (!el) return;
-                const data = seatsData[id];
-                const numEl = el.querySelector('.desk-number');
-                const nameEl = el.querySelector('.student-name');
-                
-                el.classList.remove('seat-fixed', 'selected');
-
-                if (data.name.trim() !== "") {
-                    numEl.style.display = 'none'; // 학생 이름이 있으면 번호 숨김
-                    nameEl.textContent = data.name;
-                    if (data.fixed) el.classList.add('seat-fixed');
-                } else {
-                    numEl.style.display = 'block'; // 이름이 없으면 번호 표시
-                    numEl.textContent = displayCounter++;
-                    nameEl.textContent = "";
+    async function copyClipboard() {
+        const canvas = document.getElementById('qrCanvas');
+        try {
+            canvas.toBlob(async (blob) => {
+                try {
+                    const item = new ClipboardItem({ "image/png": blob });
+                    await navigator.clipboard.write([item]);
+                    showMessage("클립보드에 복사되었습니다!");
+                } catch (err) {
+                    showMessage("복사에 실패했습니다. PNG 저장을 이용해주세요.");
                 }
             });
+        } catch (e) {
+            showMessage("지원되지 않는 브라우저입니다.");
         }
+    }
 
-        function toggleViewMode() {
-            isStudentView = !isStudentView;
-            document.body.className = isStudentView ? "p-4 md:p-8 student-view" : "p-4 md:p-8 teacher-view";
-            document.getElementById('view-label').textContent = isStudentView ? "현재: 학생 시점 (운동장: 좌측 / 교탁: 상단)" : "현재: 교사 시점 (운동장: 우측 / 교탁: 하단)";
-            document.getElementById('viewBtnText').textContent = isStudentView ? "교사 시점으로 보기" : "학생 시점으로 보기";
-            document.getElementById('text-left').textContent = isStudentView ? "운 동 장" : "복 도";
-            document.getElementById('text-right').textContent = isStudentView ? "복 도" : "운 동 장";
-        }
+    function savePNG() {
+        const canvas = document.getElementById('qrCanvas');
+        const link = document.createElement('a');
+        link.download = 'dongti_heart_qr.png';
+        link.href = canvas.toDataURL();
+        link.click();
+        showMessage("이미지가 저장되었습니다.");
+    }
 
-        function handleSeatClick(e, id) {
-            if (swapMode) {
-                if (!selectedSeatForSwap) { selectedSeatForSwap = id; document.getElementById(`seat-${id}`).classList.add('selected'); }
-                else {
-                    const temp = {...seatsData[selectedSeatForSwap]};
-                    seatsData[selectedSeatForSwap] = {...seatsData[id]};
-                    seatsData[id] = temp;
-                    selectedSeatForSwap = null;
-                    renderData();
-                }
-            } else {
-                const name = prompt(`${id}번 위치 학생 이름:`, seatsData[id].name);
-                if (name !== null) { seatsData[id].name = name; seatsData[id].fixed = (name.trim() !== ""); renderData(); }
-            }
-        }
+    window.onload = generateQR;
+</script>
 
-        function toggleSwapMode() {
-            swapMode = !swapMode;
-            document.getElementById('swapStatus').textContent = swapMode ? "ON" : "OFF";
-            document.getElementById('swapStatus').className = swapMode ? "text-indigo-600" : "text-red-500";
-            if (!swapMode) { selectedSeatForSwap = null; renderData(); }
-        }
-
-        function applyBulkAssignment() {
-            const names = document.getElementById('bulkNames').value.split(/[\n,]+/).map(s=>s.trim()).filter(s=>s!=="");
-            let idx = 0;
-            Object.keys(seatsData).map(Number).sort((a,b)=>a-b).forEach(id => {
-                if (seatsData[id].fixed) return;
-                seatsData[id].name = names[idx++] || "";
-            });
-            renderData();
-            closeModal('bulkInputModal');
-        }
-
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-        function openBulkInputModal() { document.getElementById('bulkInputModal').classList.add('active'); }
-
-        updateLayout();
-    </script>
 </body>
 </html>
