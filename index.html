@@ -3,306 +3,788 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR코드 메이커</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <title>QR 코드 메이커</title>
+    <script src="vendor/qrcode.min.js" defer></script>
+    <script src="vendor/jsQR.js" defer></script>
     <style>
-        :root { 
-            --primary: #3182F6; 
-            --glass: rgba(255, 255, 255, 0.25); 
+        :root {
+            --primary: #d9365e;
+            --primary-dark: #ac2748;
+            --surface: rgba(255, 255, 255, 0.88);
+            --line: rgba(29, 29, 31, 0.12);
             --text-main: #1d1d1f;
-            --text-sub: #444;
+            --text-sub: #50535a;
+            --success: #147a4a;
+            --warning: #9a5b00;
+            --danger: #b42318;
         }
-        
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            margin: 0; 
-            min-height: 100vh; 
-            display: flex; 
-            justify-content: center; 
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
             align-items: center;
-            background: linear-gradient(135deg, #aed6f1, #d7bde2, #ffadbb);
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(217, 54, 94, 0.18), transparent 34%),
+                radial-gradient(circle at bottom right, rgba(0, 141, 125, 0.16), transparent 32%),
+                linear-gradient(135deg, #f7f8fb, #fff4f6 48%, #f0fbf8);
+            font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            color: var(--text-main);
             padding: 20px;
-            box-sizing: border-box;
         }
 
-        .glass-card {
+        .app {
             width: 100%;
-            max-width: 480px; 
-            padding: 40px; 
-            border-radius: 30px;
-            background: var(--glass); 
-            backdrop-filter: blur(25px); 
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.4); 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            text-align: center;
-            position: relative;
+            max-width: 520px;
+            padding: 28px;
+            border-radius: 8px;
+            background: var(--surface);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 18px 42px rgba(31, 36, 48, 0.13);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
         }
 
-        h2 { margin-top: 0; color: var(--text-main); font-weight: 800; margin-bottom: 25px; }
-
-        .input-group { margin-bottom: 20px; text-align: left; }
-        label { display: block; font-size: 13px; margin-bottom: 8px; color: var(--text-sub); font-weight: 600; }
-        
-        input[type="text"] {
-            width: 100%; 
-            padding: 14px; 
-            border-radius: 12px; 
-            border: 1px solid rgba(255,255,255,0.5);
-            background: rgba(255,255,255,0.8); 
-            box-sizing: border-box; 
-            outline: none;
-            transition: border 0.2s;
+        h1 {
+            margin: 0 0 22px;
+            font-size: 28px;
+            line-height: 1.2;
+            font-weight: 800;
         }
-        input[type="text"]:focus { border-color: var(--primary); }
 
-        .flex-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        
-        select, input[type="color"] {
-            padding: 10px; 
-            border-radius: 10px; 
-            border: 1px solid rgba(255,255,255,0.5); 
-            background: #fff; 
+        form {
+            display: grid;
+            gap: 18px;
+        }
+
+        .input-group,
+        .control {
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--text-sub);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        input[type="url"],
+        select,
+        input[type="color"] {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            color: var(--text-main);
+            font: inherit;
+        }
+
+        input[type="url"],
+        select {
+            min-height: 46px;
+            padding: 0 13px;
+        }
+
+        input[type="url"]:focus,
+        select:focus,
+        input[type="color"]:focus {
+            outline: 2px solid rgba(217, 54, 94, 0.22);
+            border-color: var(--primary);
+        }
+
+        input[type="color"] {
+            height: 46px;
+            padding: 5px;
             cursor: pointer;
-            height: 42px;
-            box-sizing: border-box;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) 88px 88px;
+            gap: 10px;
+        }
+
+        .button-row {
+            display: grid;
+            grid-template-columns: 1fr 150px;
+            gap: 10px;
         }
 
         button {
-            width: 100%; 
-            padding: 16px; 
-            border: none; 
-            border-radius: 14px; 
+            min-height: 48px;
+            border: 0;
+            border-radius: 8px;
             background: var(--primary);
-            color: white; 
-            font-weight: 700; 
-            font-size: 16px; 
-            cursor: pointer; 
-            transition: 0.3s;
+            color: white;
+            font: inherit;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
         }
-        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(49, 130, 246, 0.3); }
-        button:active { transform: translateY(0); }
+
+        button:hover {
+            background: var(--primary-dark);
+            box-shadow: 0 8px 18px rgba(217, 54, 94, 0.24);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-sub {
+            background: #f1f2f4;
+            color: #24272f;
+        }
+
+        .btn-sub:hover {
+            background: #e5e7eb;
+            box-shadow: none;
+        }
 
         #preview-box {
-            margin-top: 25px; 
-            background: #fff; 
-            border-radius: 20px; 
-            padding: 25px;
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 320px;
-            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+            margin-top: 22px;
+            min-height: 330px;
+            padding: 22px;
+            border-radius: 8px;
+            background: #fff;
+            border: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
         }
-        canvas { max-width: 100%; height: auto; border-radius: 10px; }
 
-        .action-btns { display: flex; gap: 10px; margin-top: 20px; }
-        .btn-sub { background: rgba(0,0,0,0.08); color: #333; padding: 12px; font-size: 14px; flex: 1; border-radius: 12px; }
-        .btn-sub:hover { background: rgba(0,0,0,0.15); }
+        canvas {
+            display: block;
+            width: min(100%, 360px);
+            height: auto;
+            image-rendering: pixelated;
+        }
 
-        /* 제작자 표기 스타일 */
-        .footer-credit {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.3);
+        .scan-panel {
+            margin-top: 14px;
+            padding: 13px 14px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            text-align: left;
+        }
+
+        .scan-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 5px;
             font-size: 14px;
-            color: #555;
+            font-weight: 800;
         }
-        .footer-credit strong { color: #222; }
+
+        .scan-detail {
+            color: var(--text-sub);
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            flex: 0 0 10px;
+            border-radius: 50%;
+            background: var(--text-sub);
+        }
+
+        .scan-panel.success .status-dot { background: var(--success); }
+        .scan-panel.warning .status-dot { background: var(--warning); }
+        .scan-panel.error .status-dot { background: var(--danger); }
+        .scan-panel.success .scan-title { color: var(--success); }
+        .scan-panel.warning .scan-title { color: var(--warning); }
+        .scan-panel.error .scan-title { color: var(--danger); }
+
+        .action-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .footer-credit {
+            margin-top: 24px;
+            padding-top: 18px;
+            border-top: 1px solid var(--line);
+            color: var(--text-sub);
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .footer-credit strong {
+            color: var(--text-main);
+        }
+
         .footer-credit a {
             color: var(--primary);
+            font-weight: 700;
             text-decoration: none;
-            font-weight: 600;
-            transition: opacity 0.2s;
         }
-        .footer-credit a:hover { opacity: 0.7; text-decoration: underline; }
 
-        /* 메시지 알림 박스 */
+        .footer-credit a:hover {
+            text-decoration: underline;
+        }
+
         #status-msg {
             position: fixed;
-            bottom: 30px;
+            bottom: 26px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
+            max-width: min(460px, calc(100vw - 32px));
+            padding: 11px 18px;
+            border-radius: 999px;
+            background: rgba(20, 22, 28, 0.9);
+            color: #fff;
             font-size: 14px;
             display: none;
-            z-index: 1000;
-            animation: fadeIn 0.3s;
+            z-index: 10;
         }
 
-        @keyframes fadeIn { from { opacity: 0; bottom: 20px; } to { opacity: 1; bottom: 30px; } }
+        @media (max-width: 560px) {
+            body {
+                align-items: flex-start;
+                padding: 12px;
+            }
+
+            .app {
+                padding: 20px;
+            }
+
+            .control-grid,
+            .button-row,
+            .action-btns {
+                grid-template-columns: 1fr;
+            }
+
+            #preview-box {
+                min-height: 270px;
+                padding: 14px;
+            }
+        }
     </style>
 </head>
 <body>
+<main class="app">
+    <h1>QR 코드 제작</h1>
 
-<div class="glass-card">
-    <h2>QR 코드 제작</h2>
-    
-    <div class="input-group">
-        <label>연결할 URL</label>
-        <input type="text" id="urlInput" placeholder="https://www.google.com" value="https://www.google.com">
-    </div>
+    <form id="qrForm" novalidate>
+        <div class="input-group">
+            <label for="urlInput">연결할 URL</label>
+            <input type="url" id="urlInput" inputmode="url" autocomplete="url" placeholder="https://www.google.com" value="https://www.google.com">
+        </div>
 
-    <div class="flex-row">
-        <div style="flex:1; min-width: 120px; text-align:left;">
-            <label>모양</label>
-            <select id="shapeSelect" style="width:100%">
-                <option value="square">기본 사각형</option>
-                <option value="heart" selected>하트</option>
-            </select>
+        <div class="control-grid">
+            <div class="control">
+                <label for="shapeSelect">모양</label>
+                <select id="shapeSelect">
+                    <option value="square">기본 사각형</option>
+                    <option value="heart" selected>하트</option>
+                    <option value="star">별</option>
+                </select>
+            </div>
+            <div class="control">
+                <label for="fgColor">QR 색상</label>
+                <input type="color" id="fgColor" value="#000000">
+            </div>
+            <div class="control">
+                <label for="bgColor">배경 색상</label>
+                <input type="color" id="bgColor" value="#ffffff">
+            </div>
         </div>
-        <div style="text-align:left;">
-            <label>QR 색상</label>
-            <input type="color" id="fgColor" value="#000000">
-        </div>
-        <div style="text-align:left;">
-            <label>배경 색상</label>
-            <input type="color" id="bgColor" value="#ffffff">
-        </div>
-    </div>
 
-    <button onclick="generateQR()">QR 코드 생성</button>
-    
+        <div class="button-row">
+            <button type="submit">QR 코드 생성</button>
+            <button type="button" class="btn-sub" id="shuffleButton">장식 바꾸기</button>
+        </div>
+    </form>
+
     <div id="preview-box">
-        <canvas id="qrCanvas"></canvas>
+        <canvas id="qrCanvas" aria-label="생성된 QR 코드"></canvas>
     </div>
+
+    <section id="scanPanel" class="scan-panel" aria-live="polite">
+        <div class="scan-title">
+            <span id="scanStatus">검증 대기</span>
+            <span class="status-dot" aria-hidden="true"></span>
+        </div>
+        <div id="scanDetails" class="scan-detail">QR을 생성하면 스캔 가능 여부를 확인합니다.</div>
+    </section>
 
     <div class="action-btns">
-        <button class="btn-sub" onclick="copyClipboard()">클립보드 복사</button>
-        <button class="btn-sub" onclick="savePNG()">PNG 저장</button>
+        <button type="button" class="btn-sub" id="copyButton">클립보드 복사</button>
+        <button type="button" class="btn-sub" id="saveButton">PNG 저장</button>
     </div>
 
-    <!-- 제작자 표기 영역 -->
     <div class="footer-credit">
-        제작: <strong>동티</strong> | 
-        <a href="https://blog.naver.com/math_dt" target="_blank" rel="noopener">블로그 방문하기</a>
+        제작: <strong>동티</strong> |
+        <a href="https://blog.naver.com/math_dt" target="_blank" rel="noopener noreferrer">블로그 방문하기</a>
     </div>
-</div>
+</main>
 
 <div id="status-msg"></div>
 
-<script>
+<script defer>
+    const QR_CONFIG = {
+        errorCorrectionLevel: "H",
+        connectorMarginModules: 4,
+        visualBridgeModules: 1,
+        bridgeMixRatio: 0.2,
+        maxContrastWarning: 4.5
+    };
+
+    let decorationSeedOffset = 0;
+    let toastTimer = null;
+    let lastGenerated = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const form = document.getElementById("qrForm");
+        const shapeSelect = document.getElementById("shapeSelect");
+        const fgColor = document.getElementById("fgColor");
+        const bgColor = document.getElementById("bgColor");
+        const urlInput = document.getElementById("urlInput");
+
+        form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            decorationSeedOffset = 0;
+            generateQR();
+        });
+
+        shapeSelect.addEventListener("change", () => {
+            decorationSeedOffset = 0;
+            generateQR();
+        });
+
+        fgColor.addEventListener("input", generateQR);
+        bgColor.addEventListener("input", generateQR);
+        urlInput.addEventListener("input", () => {
+            decorationSeedOffset = 0;
+        });
+
+        document.getElementById("shuffleButton").addEventListener("click", () => {
+            decorationSeedOffset += 1;
+            generateQR();
+        });
+        document.getElementById("copyButton").addEventListener("click", copyClipboard);
+        document.getElementById("saveButton").addEventListener("click", savePNG);
+
+        generateQR();
+    });
+
     function showMessage(text) {
-        const msgBox = document.getElementById('status-msg');
+        const msgBox = document.getElementById("status-msg");
         msgBox.innerText = text;
-        msgBox.style.display = 'block';
-        setTimeout(() => {
-            msgBox.style.display = 'none';
-        }, 2000);
+        msgBox.style.display = "block";
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+            msgBox.style.display = "none";
+        }, 2200);
+    }
+
+    function setScanState(type, title, detail) {
+        const panel = document.getElementById("scanPanel");
+        panel.className = `scan-panel ${type}`;
+        document.getElementById("scanStatus").innerText = title;
+        document.getElementById("scanDetails").innerText = detail;
     }
 
     function generateQR() {
-        const url = document.getElementById('urlInput').value;
-        const shape = document.getElementById('shapeSelect').value;
-        const fgColor = document.getElementById('fgColor').value;
-        const bgColor = document.getElementById('bgColor').value;
-        const canvas = document.getElementById('qrCanvas');
-        const ctx = canvas.getContext('2d');
+        const input = document.getElementById("urlInput");
+        const shape = document.getElementById("shapeSelect").value;
+        const fgColor = document.getElementById("fgColor").value;
+        const bgColor = document.getElementById("bgColor").value;
+        const canvas = document.getElementById("qrCanvas");
+        const shuffleButton = document.getElementById("shuffleButton");
 
-        if (!url) {
-            showMessage("URL을 입력해주세요.");
+        shuffleButton.disabled = shape === "square";
+
+        try {
+            ensureLibraries();
+
+            const targetUrl = normalizeUrl(input.value);
+            input.value = targetUrl;
+
+            const qr = createQr(targetUrl);
+            const count = qr.getModuleCount();
+            const cellSize = getCellSize(count);
+            const connectorMargin = QR_CONFIG.connectorMarginModules * cellSize;
+            const visualBridge = QR_CONFIG.visualBridgeModules * cellSize;
+            const qrSize = count * cellSize;
+            const ornamentModules = getOrnamentModules(shape, count);
+            const ornamentSize = ornamentModules * cellSize;
+            const canvasSize = qrSize + connectorMargin * 2 + ornamentSize * 2;
+            const qrX = Math.round((canvasSize - qrSize) / 2);
+            const qrY = Math.round((canvasSize - qrSize) / 2);
+            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            const contrast = getContrastRatio(fgColor, bgColor);
+            const warnings = getQualityWarnings(fgColor, bgColor, contrast);
+            const bridgeColor = mixHexColors(bgColor, fgColor, QR_CONFIG.bridgeMixRatio);
+
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (shape !== "square") {
+                drawDecorativeShape(ctx, {
+                    shape,
+                    canvasSize,
+                    qrX,
+                    qrY,
+                    qrSize,
+                    visualBridge,
+                    cellSize,
+                    count,
+                    color: fgColor,
+                    bridgeColor,
+                    seed: `${targetUrl}|${shape}|${decorationSeedOffset}`
+                });
+            }
+
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(qrX, qrY, qrSize, qrSize);
+            drawQrMatrix(qr, ctx, qrX, qrY, cellSize, fgColor);
+
+            lastGenerated = { shape, targetUrl };
+            verifyCanvas(canvas, targetUrl, warnings, contrast);
+        } catch (error) {
+            lastGenerated = null;
+            setScanState("error", "생성 실패", error.message || "QR을 생성하지 못했습니다.");
+            showMessage(error.message || "QR을 생성하지 못했습니다.");
+        }
+    }
+
+    function ensureLibraries() {
+        if (typeof qrcode !== "function") {
+            throw new Error("QR 라이브러리를 불러오지 못했습니다. vendor/qrcode.min.js를 확인해주세요.");
+        }
+        if (qrcode.stringToBytesFuncs && qrcode.stringToBytesFuncs["UTF-8"]) {
+            qrcode.stringToBytes = qrcode.stringToBytesFuncs["UTF-8"];
+        }
+    }
+
+    function normalizeUrl(value) {
+        const trimmed = value.trim();
+        if (!trimmed) {
+            throw new Error("URL을 입력해주세요.");
+        }
+
+        const withProtocol = /^[a-z][a-z0-9+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`;
+        let parsed;
+        try {
+            parsed = new URL(withProtocol);
+        } catch {
+            throw new Error("올바른 URL 형식으로 입력해주세요.");
+        }
+
+        if (!["http:", "https:"].includes(parsed.protocol)) {
+            throw new Error("http 또는 https URL만 사용할 수 있습니다.");
+        }
+
+        return parsed.href;
+    }
+
+    function createQr(value) {
+        try {
+            const qr = qrcode(0, QR_CONFIG.errorCorrectionLevel);
+            qr.addData(value, "Byte");
+            qr.make();
+            return qr;
+        } catch (error) {
+            throw new Error("URL이 너무 길거나 QR로 만들 수 없습니다. 짧은 링크를 사용해주세요.");
+        }
+    }
+
+    function getCellSize(moduleCount) {
+        if (moduleCount <= 33) return 12;
+        if (moduleCount <= 57) return 10;
+        if (moduleCount <= 85) return 8;
+        return 6;
+    }
+
+    function getOrnamentModules(shape, moduleCount) {
+        if (shape === "square") return 0;
+        const ratio = shape === "star" ? 0.48 : 0.38;
+        return Math.max(Math.round(moduleCount * ratio), 12);
+    }
+
+    function drawQrMatrix(qr, ctx, startX, startY, cellSize, color) {
+        const count = qr.getModuleCount();
+        ctx.fillStyle = color;
+        for (let row = 0; row < count; row += 1) {
+            for (let col = 0; col < count; col += 1) {
+                if (qr.isDark(row, col)) {
+                    ctx.fillRect(startX + col * cellSize, startY + row * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+    }
+
+    function drawDecorativeShape(ctx, options) {
+        const {
+            shape,
+            canvasSize,
+            qrX,
+            qrY,
+            qrSize,
+            visualBridge,
+            cellSize,
+            count,
+            color,
+            bridgeColor,
+            seed
+        } = options;
+
+        const qrRect = {
+            left: qrX,
+            top: qrY,
+            right: qrX + qrSize,
+            bottom: qrY + qrSize
+        };
+        const bridgeRect = {
+            left: qrX - visualBridge,
+            top: qrY - visualBridge,
+            right: qrX + qrSize + visualBridge,
+            bottom: qrY + qrSize + visualBridge
+        };
+        const baseDensity = clamp(0.54 + count * 0.003, 0.58, 0.78);
+
+        for (let y = 0; y < canvasSize; y += cellSize) {
+            for (let x = 0; x < canvasSize; x += cellSize) {
+                const cx = x + cellSize / 2;
+                const cy = y + cellSize / 2;
+                if (isInRect(cx, cy, qrRect) || !isInsideShape(shape, cx, cy, canvasSize)) {
+                    continue;
+                }
+                if (isInRect(cx, cy, bridgeRect)) {
+                    ctx.fillStyle = bridgeColor;
+                    ctx.fillRect(x, y, cellSize, cellSize);
+                    continue;
+                }
+
+                const isEdge = isShapeEdge(shape, cx, cy, canvasSize, cellSize * 2);
+                const chance = isEdge ? 0.94 : baseDensity;
+                if (seededUnit(`${seed}|${x}|${y}`) <= chance) {
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, y, cellSize, cellSize);
+                }
+            }
+        }
+    }
+
+    function isInsideShape(shape, x, y, size) {
+        if (shape === "heart") return isInsideHeart(x, y, size);
+        if (shape === "star") return isInsideStar(x, y, size);
+        return false;
+    }
+
+    function isShapeEdge(shape, x, y, size, step) {
+        return !isInsideShape(shape, x - step, y, size) ||
+            !isInsideShape(shape, x + step, y, size) ||
+            !isInsideShape(shape, x, y - step, size) ||
+            !isInsideShape(shape, x, y + step, size);
+    }
+
+    function isInsideHeart(x, y, size) {
+        const nx = (x - size / 2) / (size * 0.43);
+        const ny = -((y - size / 2) / (size * 0.40)) + 0.12;
+        const value = Math.pow(nx * nx + ny * ny - 1, 3) - nx * nx * Math.pow(ny, 3);
+        return value <= 0;
+    }
+
+    function isInsideStar(x, y, size) {
+        const points = getStarPoints(size / 2, size / 2, size * 0.48, size * 0.36, 5);
+        return pointInPolygon({ x, y }, points);
+    }
+
+    function getStarPoints(cx, cy, outerRadius, innerRadius, points) {
+        const vertices = [];
+        const startAngle = -Math.PI / 2;
+        for (let i = 0; i < points * 2; i += 1) {
+            const radius = i % 2 === 0 ? outerRadius : innerRadius;
+            const angle = startAngle + i * Math.PI / points;
+            vertices.push({
+                x: cx + Math.cos(angle) * radius,
+                y: cy + Math.sin(angle) * radius
+            });
+        }
+        return vertices;
+    }
+
+    function pointInPolygon(point, vertices) {
+        let inside = false;
+        for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i, i += 1) {
+            const xi = vertices[i].x;
+            const yi = vertices[i].y;
+            const xj = vertices[j].x;
+            const yj = vertices[j].y;
+            const intersects = yi > point.y !== yj > point.y &&
+                point.x < ((xj - xi) * (point.y - yi)) / (yj - yi) + xi;
+            if (intersects) inside = !inside;
+        }
+        return inside;
+    }
+
+    function isInRect(x, y, rect) {
+        return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+    }
+
+    function seededUnit(input) {
+        let hash = 2166136261;
+        for (let i = 0; i < input.length; i += 1) {
+            hash ^= input.charCodeAt(i);
+            hash = Math.imul(hash, 16777619);
+        }
+        hash += hash << 13;
+        hash ^= hash >>> 7;
+        hash += hash << 3;
+        hash ^= hash >>> 17;
+        hash += hash << 5;
+        return (hash >>> 0) / 4294967295;
+    }
+
+    function verifyCanvas(canvas, expectedValue, warnings, contrast) {
+        const details = [`대비 ${contrast.toFixed(1)}:1`];
+        if (warnings.length > 0) {
+            details.push(warnings.join(" "));
+        }
+
+        if (typeof jsQR !== "function") {
+            setScanState("warning", "생성 완료", `${details.join(" ")} 스캔 검증 라이브러리를 불러오지 못했습니다.`);
             return;
         }
 
-        const qr = qrcode(0, 'H');
-        qr.addData(url);
-        qr.make();
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const result = jsQR(imageData.data, canvas.width, canvas.height, { inversionAttempts: "attemptBoth" });
 
-        const count = qr.getModuleCount();
-        const cellSize = 12; 
-        const qrSize = count * cellSize;
-
-        // QR 밀도 기반 확률 계산
-        const densityProbability = 0.5 + (count / 100) * 0.3;
-
-        if (shape === "square") {
-            canvas.width = qrSize + 60;
-            canvas.height = qrSize + 60;
-            ctx.fillStyle = bgColor;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.setTransform(1, 0, 0, 1, 30, 30);
-            drawMatrix(qr, ctx, count, cellSize, fgColor);
-        } else {
-            const canvasSize = qrSize * 1.8;
-            canvas.width = canvasSize;
-            canvas.height = canvasSize;
-            
-            ctx.fillStyle = bgColor;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // 하트 중심 이동 및 회전
-            ctx.setTransform(1, 0, 0, 1, canvas.width / 2, canvas.height / 2 + qrSize / 5);
-            ctx.rotate(45 * Math.PI / 180);
-
-            ctx.translate(-qrSize / 2, -qrSize / 2);
-            drawMatrix(qr, ctx, count, cellSize, fgColor);
-
-            drawLobe(ctx, qrSize / 2, 0, qrSize / 2, fgColor, cellSize, "top", densityProbability);
-            drawLobe(ctx, 0, qrSize / 2, qrSize / 2, fgColor, cellSize, "left", densityProbability);
+        if (result && result.data === expectedValue) {
+            const type = warnings.length > 0 ? "warning" : "success";
+            const title = warnings.length > 0 ? "스캔 가능, 주의 필요" : "스캔 검증 통과";
+            setScanState(type, title, details.join(" "));
+            return;
         }
-        
-        // Reset transform
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+        if (result && result.data !== expectedValue) {
+            setScanState("error", "다른 값으로 인식됨", "장식이나 색상을 바꾼 뒤 다시 생성해주세요.");
+            return;
+        }
+
+        setScanState("error", "스캔 검증 실패", `${details.join(" ")} 색상 대비를 높이거나 장식 바꾸기를 눌러주세요.`);
     }
 
-    function drawMatrix(qr, ctx, count, cellSize, color) {
-        ctx.fillStyle = color;
-        for (let r = 0; r < count; r++) {
-            for (let c = 0; c < count; c++) {
-                if (qr.isDark(r, c)) {
-                    ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
-                }
-            }
+    function getQualityWarnings(fgColor, bgColor, contrast) {
+        const warnings = [];
+        const fgLum = getRelativeLuminance(fgColor);
+        const bgLum = getRelativeLuminance(bgColor);
+
+        if (contrast < QR_CONFIG.maxContrastWarning) {
+            warnings.push("색상 대비가 낮습니다.");
         }
+        if (fgLum >= bgLum) {
+            warnings.push("밝은 배경에 어두운 QR을 권장합니다.");
+        }
+
+        return warnings;
     }
 
-    function drawLobe(ctx, cx, cy, radius, color, cellSize, side, probability) {
-        ctx.fillStyle = color;
-        for (let x = -radius; x <= radius; x += cellSize) {
-            for (let y = -radius; y <= radius; y += cellSize) {
-                if (Math.sqrt(x * x + y * y) <= radius) {
-                    const isInsideLobe = (side === "top" && y <= 0) || (side === "left" && x <= 0);
-                    if (isInsideLobe && Math.random() < probability) {
-                        ctx.fillRect(cx + x, cy + y, cellSize, cellSize);
-                    }
-                }
-            }
-        }
+    function getContrastRatio(foreground, background) {
+        const fg = getRelativeLuminance(foreground);
+        const bg = getRelativeLuminance(background);
+        const lighter = Math.max(fg, bg);
+        const darker = Math.min(fg, bg);
+        return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    function getRelativeLuminance(hex) {
+        const rgb = hexToRgb(hex).map((channel) => {
+            const normalized = channel / 255;
+            return normalized <= 0.03928
+                ? normalized / 12.92
+                : Math.pow((normalized + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+    }
+
+    function hexToRgb(hex) {
+        const clean = hex.replace("#", "");
+        return [
+            parseInt(clean.slice(0, 2), 16),
+            parseInt(clean.slice(2, 4), 16),
+            parseInt(clean.slice(4, 6), 16)
+        ];
+    }
+
+    function mixHexColors(baseHex, overlayHex, ratio) {
+        const base = hexToRgb(baseHex);
+        const overlay = hexToRgb(overlayHex);
+        const mixed = base.map((channel, index) => {
+            const value = channel * (1 - ratio) + overlay[index] * ratio;
+            return Math.round(value).toString(16).padStart(2, "0");
+        });
+        return `#${mixed.join("")}`;
+    }
+
+    function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
     }
 
     async function copyClipboard() {
-        const canvas = document.getElementById('qrCanvas');
+        const canvas = document.getElementById("qrCanvas");
+        if (!lastGenerated || !canvas.width) {
+            showMessage("먼저 QR 코드를 생성해주세요.");
+            return;
+        }
+        if (!navigator.clipboard || typeof ClipboardItem === "undefined") {
+            showMessage("이 브라우저에서는 이미지 복사를 지원하지 않습니다. PNG 저장을 이용해주세요.");
+            return;
+        }
+
         try {
-            canvas.toBlob(async (blob) => {
-                try {
-                    const item = new ClipboardItem({ "image/png": blob });
-                    await navigator.clipboard.write([item]);
-                    showMessage("클립보드에 복사되었습니다!");
-                } catch (err) {
-                    showMessage("복사에 실패했습니다. PNG 저장을 이용해주세요.");
-                }
-            });
-        } catch (e) {
-            showMessage("지원되지 않는 브라우저입니다.");
+            const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+            if (!blob) throw new Error("blob");
+            const item = new ClipboardItem({ "image/png": blob });
+            await navigator.clipboard.write([item]);
+            showMessage("클립보드에 복사되었습니다.");
+        } catch {
+            showMessage("복사에 실패했습니다. PNG 저장을 이용해주세요.");
         }
     }
 
     function savePNG() {
-        const canvas = document.getElementById('qrCanvas');
-        const link = document.createElement('a');
-        link.download = 'dongti_heart_qr.png';
-        link.href = canvas.toDataURL();
+        const canvas = document.getElementById("qrCanvas");
+        if (!lastGenerated || !canvas.width) {
+            showMessage("먼저 QR 코드를 생성해주세요.");
+            return;
+        }
+
+        const link = document.createElement("a");
+        link.download = `dongti_${lastGenerated.shape}_qr.png`;
+        link.href = canvas.toDataURL("image/png");
         link.click();
         showMessage("이미지가 저장되었습니다.");
     }
-
-    window.onload = generateQR;
 </script>
-
 </body>
 </html>
-
-
