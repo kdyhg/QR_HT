@@ -348,8 +348,6 @@
     const QR_CONFIG = {
         errorCorrectionLevel: "H",
         connectorMarginModules: 4,
-        visualBridgeModules: 1,
-        bridgeMixRatio: 0.2,
         maxContrastWarning: 4.5
     };
 
@@ -428,7 +426,6 @@
             const count = qr.getModuleCount();
             const cellSize = getCellSize(count);
             const connectorMargin = QR_CONFIG.connectorMarginModules * cellSize;
-            const visualBridge = QR_CONFIG.visualBridgeModules * cellSize;
             const qrSize = count * cellSize;
             const ornamentModules = getOrnamentModules(shape, count);
             const ornamentSize = ornamentModules * cellSize;
@@ -438,7 +435,6 @@
             const ctx = canvas.getContext("2d", { willReadFrequently: true });
             const contrast = getContrastRatio(fgColor, bgColor);
             const warnings = getQualityWarnings(fgColor, bgColor, contrast);
-            const bridgeColor = mixHexColors(bgColor, fgColor, QR_CONFIG.bridgeMixRatio);
 
             canvas.width = canvasSize;
             canvas.height = canvasSize;
@@ -453,11 +449,9 @@
                     qrX,
                     qrY,
                     qrSize,
-                    visualBridge,
                     cellSize,
                     count,
                     color: fgColor,
-                    bridgeColor,
                     seed: `${targetUrl}|${shape}|${decorationSeedOffset}`
                 });
             }
@@ -467,7 +461,7 @@
             drawQrMatrix(qr, ctx, qrX, qrY, cellSize, fgColor);
 
             lastGenerated = { shape, targetUrl };
-            verifyCanvas(canvas, targetUrl, warnings, contrast);
+            verifyCanvas(canvas, targetUrl, shape, warnings, contrast);
         } catch (error) {
             lastGenerated = null;
             setScanState("error", "생성 실패", error.message || "QR을 생성하지 못했습니다.");
@@ -525,7 +519,7 @@
 
     function getOrnamentModules(shape, moduleCount) {
         if (shape === "square") return 0;
-        const ratio = shape === "star" ? 0.48 : 0.38;
+        const ratio = shape === "star" ? 1 : 0.38;
         return Math.max(Math.round(moduleCount * ratio), 12);
     }
 
@@ -548,11 +542,9 @@
             qrX,
             qrY,
             qrSize,
-            visualBridge,
             cellSize,
             count,
             color,
-            bridgeColor,
             seed
         } = options;
 
@@ -562,14 +554,9 @@
             right: qrX + qrSize,
             bottom: qrY + qrSize
         };
-        const bridgeRect = {
-            left: qrX - visualBridge,
-            top: qrY - visualBridge,
-            right: qrX + qrSize + visualBridge,
-            bottom: qrY + qrSize + visualBridge
-        };
         const baseDensity = clamp(0.54 + count * 0.003, 0.58, 0.78);
 
+        ctx.fillStyle = color;
         for (let y = 0; y < canvasSize; y += cellSize) {
             for (let x = 0; x < canvasSize; x += cellSize) {
                 const cx = x + cellSize / 2;
@@ -577,16 +564,10 @@
                 if (isInRect(cx, cy, qrRect) || !isInsideShape(shape, cx, cy, canvasSize)) {
                     continue;
                 }
-                if (isInRect(cx, cy, bridgeRect)) {
-                    ctx.fillStyle = bridgeColor;
-                    ctx.fillRect(x, y, cellSize, cellSize);
-                    continue;
-                }
 
                 const isEdge = isShapeEdge(shape, cx, cy, canvasSize, cellSize * 2);
                 const chance = isEdge ? 0.94 : baseDensity;
                 if (seededUnit(`${seed}|${x}|${y}`) <= chance) {
-                    ctx.fillStyle = color;
                     ctx.fillRect(x, y, cellSize, cellSize);
                 }
             }
@@ -614,7 +595,7 @@
     }
 
     function isInsideStar(x, y, size) {
-        const points = getStarPoints(size / 2, size / 2, size * 0.48, size * 0.36, 5);
+        const points = getStarPoints(size / 2, size / 2, size * 0.49, size * 0.24, 5);
         return pointInPolygon({ x, y }, points);
     }
 
@@ -664,7 +645,7 @@
         return (hash >>> 0) / 4294967295;
     }
 
-    function verifyCanvas(canvas, expectedValue, warnings, contrast) {
+    function verifyCanvas(canvas, expectedValue, shape, warnings, contrast) {
         const details = [`대비 ${contrast.toFixed(1)}:1`];
         if (warnings.length > 0) {
             details.push(warnings.join(" "));
@@ -691,7 +672,12 @@
             return;
         }
 
-        setScanState("error", "스캔 검증 실패", `${details.join(" ")} 색상 대비를 높이거나 장식 바꾸기를 눌러주세요.`);
+        if (shape !== "square") {
+            setScanState("warning", "카메라 각도 확인 필요", `${details.join(" ")} 장식형 QR은 정면에서 거리와 각도를 맞춰 스캔해주세요.`);
+            return;
+        }
+
+        setScanState("error", "스캔 검증 실패", `${details.join(" ")} 색상 대비를 높이거나 다시 생성해주세요.`);
     }
 
     function getQualityWarnings(fgColor, bgColor, contrast) {
@@ -734,16 +720,6 @@
             parseInt(clean.slice(2, 4), 16),
             parseInt(clean.slice(4, 6), 16)
         ];
-    }
-
-    function mixHexColors(baseHex, overlayHex, ratio) {
-        const base = hexToRgb(baseHex);
-        const overlay = hexToRgb(overlayHex);
-        const mixed = base.map((channel, index) => {
-            const value = channel * (1 - ratio) + overlay[index] * ratio;
-            return Math.round(value).toString(16).padStart(2, "0");
-        });
-        return `#${mixed.join("")}`;
     }
 
     function clamp(value, min, max) {
